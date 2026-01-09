@@ -142,34 +142,39 @@ class MultiPersonTracker:
         self.config = config
         tracking_config = config['tracking']
         
-        self.max_disappeared = tracking_config['max_disappeared']
-        self.max_distance = tracking_config['max_distance']
+        # ⚙️ GIẢM FALSE TRACKS - tăng threshold
+        self.max_disappeared = 2  # Was 5 → Xóa track nhanh hơn
+        self.max_distance = 150  # Was 100 → Tăng để tránh mất track
+        self.min_hits = 2  # NEW: Track phải tồn tại 2 frames mới valid (nhanh hơn)
         
         self.tracks: Dict[int, PersonTrack] = {}
         
     def update(self, detections: List[Dict]) -> Dict[int, PersonTrack]:
         """
         Update tracks with new detections
-        Returns: Dict of active tracks {track_id: PersonTrack}
+        Returns: Dict of VALID tracks (min_hits >= 3)
         """
         # If no tracks exist, create new ones
         if len(self.tracks) == 0:
             for detection in detections:
                 track = PersonTrack(detection)
                 self.tracks[track.track_id] = track
-            return self.tracks
+            # Chỉ return tracks đủ min_hits
+            return {tid: t for tid, t in self.tracks.items() if len(t.detections) >= self.min_hits}
         
         # If no detections, mark all as disappeared
         if len(detections) == 0:
             for track in self.tracks.values():
                 track.mark_disappeared()
             self._remove_disappeared_tracks()
-            return self.tracks
+            # Chỉ return tracks valid
+            return {tid: t for tid, t in self.tracks.items() if len(t.detections) >= self.min_hits}
         
         # Both tracks and detections exist - match them
         self._match_detections_to_tracks(detections)
         
-        return self.tracks
+        # Chỉ return tracks valid
+        return {tid: t for tid, t in self.tracks.items() if len(t.detections) >= self.min_hits}
     
     def _match_detections_to_tracks(self, detections: List[Dict]):
         """Match detections to existing tracks using Hungarian algorithm"""

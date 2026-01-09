@@ -17,8 +17,8 @@ detection:
     max_area: 100000  # Maximum contour area
   
   sensitivity: 0.7  # 0.0 - 1.0
-  fall_duration_threshold: 2.0  # seconds to confirm fall
-  immobility_threshold: 5.0  # seconds of no movement
+  fall_duration_threshold: 1.5  # seconds to confirm fall (giảm từ 2.0 → nhạy hơn)
+  immobility_threshold: 4.0  # seconds of no movement (giảm từ 5.0 → nhanh hơn)
   motion_threshold: 50  # Motion energy threshold
 
 # Risk Scoring (0-100)

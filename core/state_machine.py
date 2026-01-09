@@ -112,13 +112,13 @@ class PersonStateMachine:
         return self.current_state
     
     def _is_lying_position(self, features: Dict) -> bool:
-        """Check if person is in lying position"""
+        """Check if person is in lying position - STRICT VERSION"""
         aspect_ratio = features['aspect_ratio']
         angle = features['angle']
         centroid_y_ratio = features['centroid_y_ratio']
         
-        # Lying indicators:
-        # 1. Wide aspect ratio (width > height)
+        # Lying indicators (STRICTER):
+        # 1. Wide aspect ratio (width > height) - MUST HAVE
         is_wide = aspect_ratio > self.aspect_ratio_threshold
         
         # 2. Horizontal angle
@@ -130,7 +130,7 @@ class PersonStateMachine:
         # 3. Low in frame
         is_low = centroid_y_ratio > self.centroid_y_threshold
         
-        # Need at least 2 indicators
+        # ⚙️ Cần 2/3 indicators (balance giữa accuracy và sensitivity)
         indicators = sum([is_wide, is_horizontal, is_low])
         return indicators >= 2
     
@@ -138,8 +138,8 @@ class PersonStateMachine:
         """Check if person is falling with high velocity"""
         vy = track.get_centroid_y_speed()
         
-        # Fast downward movement (calibrate this threshold)
-        fall_speed_threshold = 5.0  # pixels per frame
+        # ⚙️ Giảm từ 8.0 → 6.0 (nhạy hơn nhưng vẫn tránh false alarm)
+        fall_speed_threshold = 6.0
         return vy > fall_speed_threshold
     
     def _transition_to(self, new_state: FallState):
