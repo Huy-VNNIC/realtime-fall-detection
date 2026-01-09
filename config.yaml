@@ -32,12 +32,68 @@ risk_scoring:
     alarm: 65
     emergency: 85
 
-# ML Classifier
+# ML Classifier (Basic)
 ml_classifier:
   enabled: true  # Set to false to use only OpenCV
   model_path: "ai/models/fall_classifier.pkl"
   confidence_threshold: 0.7
   window_size: 30  # frames for feature extraction
+  
+  # XGBoost (Advanced - better accuracy)
+  use_xgboost: false  # Set to true after training XGBoost model
+  xgboost_model_path: "ai/models/xgboost_fall_classifier.pkl"
+  
+  # Online Learning (Continuous improvement)
+  online_learning:
+    enabled: false
+    update_interval: 100  # Update model every N predictions
+    
+  # Ensemble (Combine multiple models)
+  ensemble:
+    enabled: false
+    models: ['ml', 'xgboost', 'pose']  # Available models
+    voting: 'weighted'  # 'hard' or 'weighted'
+
+# Deep Learning (Advanced AI)
+deep_learning:
+  enabled: false
+  model_path: "ai/models/cnn_lstm_model.pth"
+  use_gpu: false
+  batch_size: 1
+  
+  # Pose Estimation (MediaPipe)
+  pose_estimation:
+    enabled: false
+    model_complexity: 1  # 0=lite, 1=full, 2=heavy
+    min_detection_confidence: 0.5
+    min_tracking_confidence: 0.5
+    
+  # Transformers (Future)
+  transformer:
+    enabled: false
+    model_path: "ai/models/transformer_model.pth"
+    
+# AI Features
+ai_features:
+  # Explainable AI
+  explain_predictions: false  # Show why alarm triggered
+  
+  # Anomaly Detection
+  anomaly_detection:
+    enabled: false
+    sensitivity: 0.8
+    
+  # Context Awareness
+  context_aware:
+    enabled: false
+    time_based_threshold: true  # Different thresholds by time
+    user_profile: false  # Personalized detection
+    
+  # Federated Learning (Privacy-preserving)
+  federated_learning:
+    enabled: false
+    server_url: ""
+    sync_interval: 3600  # seconds
 
 # Recording
 recording:
