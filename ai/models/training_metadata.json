@@ -1,0 +1,11 @@
+{
+  "best_model": "random_forest",
+  "best_auc": 1.0,
+  "models": {
+    "random_forest": {
+      "accuracy": 1.0,
+      "auc": 1.0
+    }
+  },
+  "trained_at": "2026-01-09T23:55:16.429198"
+}
