@@ -1,0 +1,91 @@
+# System Configuration
+camera:
+  source: 0  # 0 for webcam, or path to video file
+  width: 640
+  height: 480
+  fps: 30
+
+# Detection Settings
+detection:
+  background_subtraction:
+    history: 500
+    var_threshold: 16
+    detect_shadows: false
+  
+  contour:
+    min_area: 2000  # Minimum contour area
+    max_area: 100000  # Maximum contour area
+  
+  sensitivity: 0.7  # 0.0 - 1.0
+  fall_duration_threshold: 2.0  # seconds to confirm fall
+  immobility_threshold: 5.0  # seconds of no movement
+  motion_threshold: 50  # Motion energy threshold
+
+# Risk Scoring (0-100)
+risk_scoring:
+  enabled: true
+  fall_speed_weight: 0.4
+  immobility_weight: 0.3
+  lying_duration_weight: 0.3
+  thresholds:
+    warning: 40
+    alarm: 65
+    emergency: 85
+
+# ML Classifier
+ml_classifier:
+  enabled: true  # Set to false to use only OpenCV
+  model_path: "ai/models/fall_classifier.pkl"
+  confidence_threshold: 0.7
+  window_size: 30  # frames for feature extraction
+
+# Recording
+recording:
+  enabled: true
+  output_dir: "recordings"
+  buffer_seconds: 10
+  save_before: 5  # seconds before alarm
+  save_after: 5   # seconds after alarm
+  snapshot_format: "jpg"
+  video_codec: "mp4v"
+
+# Multi-person Tracking
+tracking:
+  enabled: true
+  max_disappeared: 30  # frames before removing track
+  max_distance: 100  # pixels for association
+
+# ROI (Region of Interest) - optional
+roi:
+  enabled: false
+  x: 100
+  y: 100
+  width: 400
+  height: 300
+
+# iOS App Integration
+ios_api:
+  enabled: true
+  host: "0.0.0.0"
+  port: 8080
+  alert_cooldown: 10  # seconds between alerts
+
+# Monitoring & Logging
+monitoring:
+  enabled: true
+  log_file: "logs/fall_detection.db"
+  show_fps: true
+  show_cpu: true
+
+# Dashboard
+dashboard:
+  enabled: false
+  update_interval: 1.0  # seconds
+
+# Debug
+debug:
+  show_video: true
+  show_contours: true
+  show_bbox: true
+  show_info: true
+  save_frames: false

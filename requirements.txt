@@ -1,0 +1,31 @@
+# Core dependencies
+opencv-python>=4.8.0
+numpy>=1.24.0
+scipy>=1.10.0
+
+# Machine Learning
+scikit-learn>=1.3.0
+joblib>=1.3.0
+
+# Video processing
+imutils>=0.5.4
+
+# Configuration
+pyyaml>=6.0
+
+# Database
+# sqlite3 is built-in Python
+
+# Web API
+websockets>=11.0
+aiohttp>=3.8.0
+
+# Monitoring
+psutil>=5.9.0
+
+# Optional: for pose estimation upgrade
+# mediapipe>=0.10.0
+
+# Optional: for deep learning upgrade
+# torch>=2.0.0
+# onnxruntime>=1.15.0
