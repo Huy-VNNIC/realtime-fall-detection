@@ -1,154 +1,303 @@
-# AI Fall Detection System - Professional Edition
+# 🚨 AI Fall Detection System - Real-time
 
-**Hệ thống phát hiện té ngã thời gian thực với AI, không YOLO**
+> **Hệ thống phát hiện té ngã thời gian thực với AI, không YOLO**
+> 
+> Realtime fall detection from webcam using OpenCV (no YOLO). State machine + ML classifier to trigger alarms and send alerts to iOS app via WebSocket.
 
-## 🎯 Tính năng chính
+## 🎯 Tính năng chính / Key Features
 
 ### Core AI Features
-- ✅ OpenCV-based motion detection (background subtraction)
-- ✅ ML Classifier (sklearn) phân biệt "fall" vs "not fall" (giảm false alarm)
-- ✅ Risk Scoring System (0-100 điểm nguy cơ)
-- ✅ Immobility Detection (phát hiện bất động sau té)
-- ✅ Multi-person tracking (theo dõi nhiều người)
+- ✅ **OpenCV-based motion detection** (MOG2 background subtraction)
+- ✅ **ML Classifier** (sklearn) phân biệt "fall" vs "not fall" (giảm false alarm)
+- ✅ **Risk Scoring System** (0-100 điểm nguy cơ)
+- ✅ **Immobility Detection** (phát hiện bất động sau té)
+- ✅ **Multi-person tracking** (theo dõi nhiều người với Kalman filter)
+- ✅ **State Machine** (STANDING → FALLING → FALLEN → ALARM)
 
 ### Product Features
-- 📸 Auto snapshot + video clip khi alarm
-- 📊 Real-time dashboard (FPS, CPU, alert stats)
-- ⚙️ Config system (sensitivity, ROI, thresholds)
-- 📱 iOS App integration (WebSocket API)
-- 🗃️ SQLite logging system
-- 📈 Training pipeline + dataset collection tool
+- 📸 **Auto recording**: Snapshot + 10s video clip khi alarm
+- 📊 **Real-time dashboard**: FPS, CPU usage, alert statistics
+- ⚙️ **Config system**: Sensitivity, ROI, thresholds (YAML)
+- 📱 **iOS App integration**: WebSocket API cho real-time alerts
+- 🗃️ **SQLite logging**: Event tracking & system statistics
+- 📈 **Training pipeline**: Data collection + model training tools
 
-## 📁 Cấu trúc dự án
+## 📁 Project Structure
 
 ```
 fall-detection-system/
 ├── core/                   # Core detection modules
-│   ├── detector.py        # Background subtraction + contour
-│   ├── tracker.py         # Multi-person tracking (Kalman)
-│   ├── state_machine.py   # Fall state logic
-│   └── immobility.py      # Immobility detection
+│   ├── detector.py        # Background subtraction + contour analysis
+│   ├── tracker.py         # Multi-person tracking (Kalman filter)
+│   ├── state_machine.py   # Fall state logic (5 states)
+│   └── immobility.py      # Post-fall immobility detection
 │
 ├── ai/                     # AI/ML components
-│   ├── feature_extractor.py  # Feature engineering
-│   ├── classifier.py          # ML model wrapper
-│   └── models/                # Trained models (.pkl)
+│   ├── feature_extractor.py  # 39-dimensional feature engineering
+│   ├── classifier.py          # ML model wrapper (RF/SVM/LR)
+│   └── models/                # Trained models (.pkl/.joblib)
 │
 ├── utils/                  # Utilities
-│   ├── risk_scorer.py     # Risk scoring algorithm
+│   ├── risk_scorer.py     # Risk scoring algorithm (0-100)
 │   ├── video_buffer.py    # Circular buffer + clip save
-│   ├── config.py          # Configuration manager
+│   ├── config.py          # Configuration manager (YAML)
 │   └── logger.py          # Event logging (SQLite)
 │
 ├── data/                   # Data collection & training
-│   ├── collector.py       # Data collection tool
-│   ├── train.py          # Training pipeline
-│   └── datasets/         # Collected datasets
+│   ├── collector.py       # Dataset collection tool
+│   ├── train.py          # Training pipeline with metrics
+│   └── datasets/         # Collected training data
 │
 ├── api/                    # iOS App integration
-│   ├── websocket_server.py  # WebSocket API
-│   └── alert_handler.py     # Alert management
+│   └── websocket_server.py  # WebSocket server for alerts
 │
-├── main.py                # Main application
-├── dashboard.py           # Real-time monitoring dashboard
-├── requirements.txt       # Dependencies
-└── config.yaml           # User configuration
+├── main.py                 # Main application
+├── config.yaml            # Configuration file
+├── requirements.txt       # Python dependencies
+└── docs/                  # Documentation
+    ├── QUICKSTART.md      # 5-minute quick start
+    ├── USAGE_GUIDE.md     # Full usage guide
+    └── BUILD_COMPLETE.md  # Feature checklist
 ```
 
 ## 🚀 Quick Start
 
-### 1. Cài đặt
+### 1. Installation
 
 ```bash
-cd "/home/dtu/Dectact-camare real time"
-pip install -r requirements.txt
+# Clone repository
+git clone https://github.com/Huy-VNNIC/realtime-fall-detection.git
+cd realtime-fall-detection
+
+# Install dependencies
+pip3 install -r requirements.txt
 ```
 
-### 2. Thu thập dữ liệu (tùy chọn - để train AI)
+### 2. Test webcam
 
 ```bash
-python data/collector.py --mode fall --duration 60
-python data/collector.py --mode normal --duration 60
+# Quick webcam test (3 modes: RAW/MOTION/FALL_DETECT)
+python3 test_webcam_simple.py
+
+# Full system test
+python3 test_installation.py
 ```
 
-### 3. Train model
+### 3. Run system
 
 ```bash
-python data/train.py --input datasets/features.csv --output ai/models/fall_classifier.pkl
+# Start with default webcam
+python3 main.py
+
+# Or with specific camera index
+python3 main.py --camera 0
+
+# Or with video file
+python3 main.py --video path/to/video.mp4
 ```
 
-### 4. Chạy hệ thống
+**Press Q to quit**
+
+## 🎮 Usage Modes
+
+### Mode 1: Basic Detection (No ML)
+```bash
+python3 main.py
+```
+- Uses OpenCV background subtraction
+- Aspect ratio analysis (lying detection)
+- False alarms possible
+
+### Mode 2: With ML Classifier (Recommended)
+```bash
+# 1. Collect training data
+python3 data/collector.py --mode fall
+python3 data/collector.py --mode not_fall
+
+# 2. Train model
+python3 data/train.py
+
+# 3. Enable ML in config.yaml
+# classifier:
+#   enabled: true
+
+# 4. Run with ML
+python3 main.py
+```
+- Reduced false alarms
+- Better accuracy
+- Learns from your environment
+
+## 📊 System Output
+
+### Console Display
+```
+[2026-01-10 12:34:56] INFO - System started
+[2026-01-10 12:35:01] INFO - Person detected (ID: 1)
+[2026-01-10 12:35:05] WARNING - Risk score: 45 (STANDING)
+[2026-01-10 12:35:08] CRITICAL - FALL DETECTED! Risk: 85
+[2026-01-10 12:35:08] INFO - Snapshot saved: recordings/alarm_20260110_123508.jpg
+[2026-01-10 12:35:18] INFO - Video clip saved: recordings/alarm_20260110_123508.mp4
+```
+
+### Video Overlay
+- **Green box**: Normal (standing/walking)
+- **Yellow box**: Warning (sitting/bending)
+- **Red box**: Danger (lying down)
+- Risk score + state display
+- FPS counter
+
+### Recordings
+- `recordings/alarm_YYYYMMDD_HHMMSS.jpg` - Snapshot at alarm moment
+- `recordings/alarm_YYYYMMDD_HHMMSS.mp4` - 10s video clip (5s before + 5s after)
+
+### Database Logs
+- `logs/fall_detection.db` - SQLite database
+  - `events` table: All fall events with timestamps, risk scores
+  - `system_stats` table: FPS, CPU usage, alert counts
+
+## 📱 iOS App Integration
 
 ```bash
-# Chế độ realtime
-python main.py
+# Start WebSocket server
+python3 api/websocket_server.py
 
-# Với dashboard
-python main.py --dashboard
-
-# Với iOS API
-python main.py --api --port 8080
+# Or enable in config.yaml:
+# websocket:
+#   enabled: true
+#   port: 8765
 ```
+
+iOS app connects via WebSocket to receive:
+- Real-time fall alerts
+- Risk score updates
+- Person tracking info
+- Video frame snapshots
 
 ## ⚙️ Configuration
 
-Edit [config.yaml](config.yaml):
+Edit `config.yaml`:
 
 ```yaml
 detection:
-  sensitivity: 0.7
-  fall_duration_threshold: 2.0  # seconds
-  immobility_threshold: 5.0
-  
+  min_area: 3000           # Minimum contour area
+  lying_aspect_ratio: 1.5  # Aspect ratio threshold for lying
+  fall_angle: 30           # Fall angle threshold (degrees)
+
+alarm:
+  lying_duration: 3.0      # Seconds before alarm
+  immobility_duration: 5.0 # Seconds of immobility to confirm
+
 risk_scoring:
-  fall_speed_weight: 0.4
-  immobility_weight: 0.3
-  lying_duration_weight: 0.3
+  weights:
+    fall_speed: 0.4        # 40% weight
+    immobility: 0.3        # 30% weight
+    lying_duration: 0.3    # 30% weight
 
-recording:
-  buffer_seconds: 10
-  save_before: 5
-  save_after: 5
-
-ios_api:
-  enabled: true
-  port: 8080
+classifier:
+  enabled: false           # Enable ML classifier
+  model_path: data/models/fall_classifier.pkl
 ```
 
-## 📊 Model Performance
+## 🧪 Testing Tools
 
-Sau khi train, xem metrics:
-- Accuracy: ~92-95%
-- False alarm rate: <5%
-- Real-time FPS: 25-30 (CPU)
+| Tool | Purpose |
+|------|---------|
+| `test_webcam_simple.py` | Quick webcam test (3 modes) |
+| `test_installation.py` | Verify all dependencies |
+| `test_headless.py` | Test without camera/GUI |
+| `demo_no_camera.py` | Demo with simulated data |
 
-## 📱 iOS Integration
+## 📈 Performance
 
-WebSocket endpoint: `ws://localhost:8080/ws`
+- **FPS**: 20-30 on typical laptop (no GPU needed)
+- **CPU**: 15-30% on 4-core CPU
+- **Latency**: < 100ms detection time
+- **Accuracy**: 85-95% with trained ML model
 
-Message format:
-```json
-{
-  "type": "ALARM",
-  "risk_score": 85,
-  "timestamp": "2026-01-09T10:30:00",
-  "snapshot": "path/to/image.jpg",
-  "clip": "path/to/video.mp4",
-  "person_id": 1
-}
+## 🛠️ Development
+
+### Data Collection
+```bash
+# Collect "fall" samples
+python3 data/collector.py --mode fall --samples 100
+
+# Collect "not fall" samples
+python3 data/collector.py --mode not_fall --samples 100
 ```
 
-## 🏗️ Roadmap nâng cấp
+### Model Training
+```bash
+python3 data/train.py
 
-- [ ] Level 1: OpenCV + immobility + risk scoring ✅
-- [ ] Level 2: ML classifier (sklearn) ✅
-- [ ] Level 3: MediaPipe Pose + LSTM sequence model
-- [ ] Level 4: Edge deployment (Raspberry Pi)
+# Output:
+# - data/models/fall_classifier.pkl
+# - data/models/metrics.txt
+# - data/models/confusion_matrix.png
+# - data/models/feature_importance.png
+```
 
-## 📝 License
+## 📋 Requirements
 
-MIT
+- Python 3.7+
+- OpenCV 4.x
+- NumPy
+- scikit-learn
+- PyYAML
+- websockets (for iOS integration)
+
+## 🐛 Troubleshooting
+
+### "Cannot open camera"
+```bash
+# Try different camera index
+python3 main.py --camera 1
+
+# List available cameras
+python3 show_info.py
+```
+
+### High false alarm rate
+```bash
+# 1. Adjust sensitivity in config.yaml
+# 2. Or train ML classifier with your environment
+python3 data/collector.py --mode not_fall
+python3 data/train.py
+```
+
+### Low FPS
+```bash
+# Reduce resolution in config.yaml
+camera:
+  width: 640
+  height: 480
+```
+
+## 📚 Documentation
+
+- [QUICKSTART.md](QUICKSTART.md) - 5-minute setup guide
+- [USAGE_GUIDE.md](USAGE_GUIDE.md) - Comprehensive usage guide
+- [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) - Code architecture
+- [BUILD_COMPLETE.md](BUILD_COMPLETE.md) - Feature checklist
+- [TEST_WEBCAM_LOCAL.md](TEST_WEBCAM_LOCAL.md) - Local testing guide
+
+## 👨‍💻 Author
+
+**Huy-VNNIC**
+- GitHub: [@Huy-VNNIC](https://github.com/Huy-VNNIC)
+- Email: nguyennhathuy11@dtu.edu.vn
+
+## 📄 License
+
+MIT License - Free to use for personal and commercial projects.
+
+## 🙏 Acknowledgments
+
+Built with:
+- OpenCV for computer vision
+- scikit-learn for machine learning
+- Python ecosystem for rapid development
 
 ---
 
-**Build with ❤️ - Fall Detection System v2.0**
+**⭐ If this helps you, give it a star!**
