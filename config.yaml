@@ -5,6 +5,15 @@ camera:
   height: 480
   fps: 30
 
+# ★ Pose Detection (YOLOv8-Pose) - Thay thế contour-based
+pose:
+  model_path: "yolov8n-pose.pt"  # Auto download nếu chưa có
+  conf: 0.25           # Person confidence threshold
+  iou: 0.45            # NMS IoU threshold
+  kpt_conf: 0.30       # Keypoint confidence threshold
+  max_people: 5        # Max số người detect
+  imgsz: 640           # Input size
+
 # Detection Settings
 detection:
   background_subtraction:
@@ -13,8 +22,8 @@ detection:
     detect_shadows: false
   
   contour:
-    min_area: 2000  # Minimum contour area
-    max_area: 100000  # Maximum contour area
+    min_area: 2000  # Không dùng nữa (giữ để tương thích)
+    max_area: 100000
   
   sensitivity: 0.7  # 0.0 - 1.0
   fall_duration_threshold: 1.5  # seconds to confirm fall (giảm từ 2.0 → nhạy hơn)
@@ -141,7 +150,8 @@ dashboard:
 # Debug
 debug:
   show_video: true
-  show_contours: true
-  show_bbox: true
+  show_pose_debug: true  # ★ Hiển thị torso_angle, hip_drop, hip_speed (tune threshold)
+  show_contours: false   # Không dùng contour nữa
+  show_bbox: false       # Chỉ vẽ skeleton
   show_info: true
   save_frames: false

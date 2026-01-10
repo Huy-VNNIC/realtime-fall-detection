@@ -76,7 +76,9 @@ class PersonStateMachine:
         new_state = self.current_state
         
         if self.current_state == FallState.STANDING:
-            if is_lying or is_falling_fast:
+            # ★ CHỈ chuyển sang FALLING nếu có dấu hiệu RƠI (không dùng is_lying)
+            # Đây là fix chính cho lỗi "đứng yên mà FALLEN"
+            if is_falling_fast:
                 new_state = FallState.FALLING
                 
         elif self.current_state == FallState.FALLING:
@@ -112,35 +114,48 @@ class PersonStateMachine:
         return self.current_state
     
     def _is_lying_position(self, features: Dict) -> bool:
-        """Check if person is in lying position - STRICT VERSION"""
-        aspect_ratio = features['aspect_ratio']
-        angle = features['angle']
+        """
+        ★ POSE-BASED lying detection (torso_angle)
+        Không dựa vào bbox aspect_ratio nữa (dễ bị nhiễu)
+        """
+        torso_angle = features.get('torso_angle', features.get('angle', 0.0))
         centroid_y_ratio = features['centroid_y_ratio']
         
-        # Lying indicators (STRICTER):
-        # 1. Wide aspect ratio (width > height) - MUST HAVE
-        is_wide = aspect_ratio > self.aspect_ratio_threshold
+        # Lying indicators:
+        # 1. Torso angle > 55° (gần nằm ngang)
+        is_horizontal = torso_angle > 55.0
         
-        # 2. Horizontal angle
-        is_horizontal = (
-            angle < self.angle_threshold[0] or 
-            angle > self.angle_threshold[1]
-        )
+        # 2. Low in frame (thấp trong khung)
+        is_low = centroid_y_ratio > 0.60
         
-        # 3. Low in frame
-        is_low = centroid_y_ratio > self.centroid_y_threshold
+        # 3. Floor distance (gần sàn)
+        floor_dist = features.get('floor_dist_norm', 1.0)
+        is_near_floor = floor_dist < 0.25
         
-        # ⚙️ Cần 2/3 indicators (balance giữa accuracy và sensitivity)
-        indicators = sum([is_wide, is_horizontal, is_low])
+        # Cần 2/3 indicators
+        indicators = sum([is_horizontal, is_low, is_near_floor])
         return indicators >= 2
     
     def _is_falling_fast(self, track: PersonTrack) -> bool:
-        """Check if person is falling with high velocity"""
-        vy = track.get_centroid_y_speed()
+        """
+        ★ POSE-BASED fall detection: hip_drop hoặc hip_speed
+        KHÔNG dựa vào centroid_y_speed nữa (không đáng tin)
+        """
+        # Hip drop (rơi nhanh trong 0.4s)
+        hip_drop = track.get_hip_drop(time_window=0.4)
         
-        # ⚙️ Giảm từ 8.0 → 6.0 (nhạy hơn nhưng vẫn tránh false alarm)
-        fall_speed_threshold = 6.0
-        return vy > fall_speed_threshold
+        # Hip speed (normalized)
+        hip_speed_norm = track.get_hip_speed_norm()
+        
+        # Thresholds (calibrate theo camera của bạn)
+        drop_thr = 0.12   # 12% frame height trong 0.4s
+        speed_thr = 0.70  # 70% frame height/s
+        
+        # Nếu có 1 trong 2 dấu hiệu rơi nhanh
+        is_dropping = hip_drop > drop_thr
+        is_fast = hip_speed_norm > speed_thr
+        
+        return is_dropping or is_fast
     
     def _transition_to(self, new_state: FallState):
         """Transition to new state"""

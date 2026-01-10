@@ -16,6 +16,7 @@ from core import (
     FallState,
     ImmobilityDetector
 )
+from core.pose_detector import PoseDetector, draw_skeleton  # ★ Pose-based detector
 from ai import FeatureExtractor, FallClassifier
 from utils import (
     ConfigManager,
@@ -44,7 +45,8 @@ class FallDetectionSystem:
         # Initialize components
         print("[INIT] Initializing components...")
         
-        self.detector = FallDetector(self.config)
+        # ★ Dùng PoseDetector thay vì FallDetector (contour-based)
+        self.detector = PoseDetector(self.config)
         self.tracker = MultiPersonTracker(self.config)
         self.state_manager = StateMachineManager(self.config)
         self.immobility_detector = ImmobilityDetector(self.config)
@@ -285,12 +287,18 @@ class FallDetectionSystem:
             # Get color based on risk
             color = self.risk_scorer.get_risk_color(risk_score)
             
-            # Draw bbox
-            thickness = 3 if state == FallState.ALARM else 2
-            cv2.rectangle(display, (x, y), (x+w, y+h), color, thickness)
+            # ★ Vẽ skeleton thay vì bbox (giống hình 4)
+            kp = getattr(track, 'last_keypoints', None)
+            if kp is not None:
+                draw_skeleton(display, kp, kpt_th=0.30, thickness=2)
             
-            # Draw info
-            info_text = f"ID:{track_id} {state.value}"
+            # Vẫn vẽ bbox mỏng nếu muốn (optional)
+            # thickness = 1 if state != FallState.ALARM else 2
+            # cv2.rectangle(display, (x, y), (x+w, y+h), color, thickness)
+            
+            # ★ Draw info giống hình 4: confidence - ID
+            pose_conf = track.detections[-1].get('pose_conf', 0.0) if track.detections else 0.0
+            info_text = f"{pose_conf:.2f} - id_{track_id} - {state.value}"
             cv2.putText(
                 display, info_text, (x, y - 10),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2
@@ -302,6 +310,17 @@ class FallDetectionSystem:
                 display, risk_text, (x, y + h + 20),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2
             )
+            
+            # ★ Debug: hiển thị pose features (optional, comment out nếu không muốn)
+            if self.config.get('debug', {}).get('show_pose_debug', False):
+                torso_angle = features.get('torso_angle', 0.0)
+                hip_drop = track.get_hip_drop()
+                hip_speed = track.get_hip_speed_norm()
+                debug_text = f"Angle:{torso_angle:.0f} Drop:{hip_drop:.2f} Speed:{hip_speed:.2f}"
+                cv2.putText(
+                    display, debug_text, (x, y + h + 40),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 0), 1
+                )
         
         # Draw system info
         self._draw_system_info(display)

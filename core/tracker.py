@@ -80,6 +80,7 @@ class PersonTrack:
         # Features for analysis
         self.last_bbox = detection['bbox']
         self.last_features = detection['features']
+        self.last_keypoints = detection.get('keypoints')  # ★ Lưu keypoints để vẽ skeleton
         
     def update(self, detection: Dict):
         """Update track with new detection"""
@@ -92,6 +93,7 @@ class PersonTrack:
         
         self.last_bbox = detection['bbox']
         self.last_features = detection['features']
+        self.last_keypoints = detection.get('keypoints')  # ★ Update keypoints
         
         # Keep only last N detections
         max_history = 60
@@ -131,6 +133,59 @@ class PersonTrack:
         """Vertical speed (important for fall detection)"""
         _, vy = self.get_velocity()
         return abs(vy)
+    
+    def get_hip_drop(self, time_window: float = 0.4) -> float:
+        """
+        ★ HIP DROP: Khoảng cách hip rơi xuống trong time_window giây
+        Trả về: normalized drop (0.0 - 1.0, chia cho frame height)
+        """
+        if len(self.detections) < 2:
+            return 0.0
+        
+        current_time = self.timestamps[-1]
+        current_hip_y = self.last_features['centroid'][1]
+        
+        # Tìm detection cách đây time_window giây
+        for i in range(len(self.detections) - 2, -1, -1):
+            if current_time - self.timestamps[i] >= time_window:
+                prev_hip_y = self.detections[i]['features']['centroid'][1]
+                frame_h = self.last_features.get('bbox_height', 1) * 2  # Ước lượng frame height
+                drop = (current_hip_y - prev_hip_y) / max(frame_h, 1)
+                return max(0.0, drop)  # Chỉ trả về nếu rơi xuống (drop > 0)
+        
+        return 0.0
+    
+    def get_hip_speed_norm(self) -> float:
+        """
+        ★ HIP SPEED: Vận tốc hip normalized (px/s / frame_height)
+        Dùng để phát hiện ngã nhanh
+        """
+        if len(self.detections) < 2:
+            return 0.0
+        
+        recent = self.detections[-10:]  # Last 10 frames
+        times = self.timestamps[-10:]
+        
+        if len(recent) < 2:
+            return 0.0
+        
+        # Extract hip y positions
+        hip_ys = [d['features']['centroid'][1] for d in recent]
+        
+        # Calculate velocity
+        dy = hip_ys[-1] - hip_ys[0]
+        dt = times[-1] - times[0]
+        
+        if dt < 0.01:
+            return 0.0
+        
+        speed = abs(dy) / dt  # px/s
+        
+        # Normalize by frame height
+        frame_h = self.last_features.get('bbox_height', 1) * 2
+        speed_norm = speed / max(frame_h, 1)
+        
+        return speed_norm
 
 
 class MultiPersonTracker:
